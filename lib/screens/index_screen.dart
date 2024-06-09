@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:table_calendar/table_calendar.dart';
+import 'user_screen.dart';
+import 'recordatorios_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -31,11 +34,12 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> data = [];
   bool isLoading = false;
   DateTime selectedDate = DateTime.now();
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    getData();  // Llama a getData cuando se inicia el estado
+    getData();
   }
 
   Future<void> getData() async {
@@ -155,70 +159,85 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Actualizar Recordatorio'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(labelText: 'Nombre Recordatorio'),
-                controller: nombreController,
-              ),
-              TextField(
-                decoration: InputDecoration(labelText: 'Descripción'),
-                controller: descripcionController,
-              ),
-              TextField(
-                readOnly: true,
-                controller: fechaController,
-                decoration: InputDecoration(labelText: 'Fecha'),
-                onTap: () => _selectDate(context, fechaController),
-              ),
-              TextField(
-                readOnly: true,
-                controller: horaController,
-                decoration: InputDecoration(labelText: 'Hora'),
-                onTap: () => _selectTime(context, horaController),
-              ),
-              DropdownButton<String>(
-                value: tipo,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    tipo = newValue!;
-                  });
-                },
-                items: <String>['Urgente', 'Importante', 'Poca Importancia']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-            ],
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancelar'),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.50, // Adjust the width here
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Actualizar Recordatorio',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  decoration: InputDecoration(labelText: 'Nombre Recordatorio'),
+                  controller: nombreController,
+                ),
+                TextField(
+                  decoration: InputDecoration(labelText: 'Descripción'),
+                  controller: descripcionController,
+                ),
+                TextField(
+                  readOnly: true,
+                  controller: fechaController,
+                  decoration: InputDecoration(labelText: 'Fecha'),
+                  onTap: () => _selectDate(context, fechaController),
+                ),
+                TextField(
+                  readOnly: true,
+                  controller: horaController,
+                  decoration: InputDecoration(labelText: 'Hora'),
+                  onTap: () => _selectTime(context, horaController),
+                ),
+                DropdownButton<String>(
+                  value: tipo,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      tipo = newValue!;
+                    });
+                  },
+                  items: <String>['Urgente', 'Importante', 'Poca Importancia']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        updateData({
+                          'ID_Agenda': record['ID_Agenda'],
+                          'Nombre_Recordatorio': nombreController.text,
+                          'Descripcion': descripcionController.text,
+                          'Fecha': fechaController.text,
+                          'Hora': horaController.text,
+                          'Tipo': tipo,
+                        });
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Actualizar'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                updateData({
-                  'ID_Agenda': record['ID_Agenda'],
-                  'Nombre_Recordatorio': nombreController.text,
-                  'Descripcion': descripcionController.text,
-                  'Fecha': fechaController.text,
-                  'Hora': horaController.text,
-                  'Tipo': tipo,
-                });
-                Navigator.of(context).pop();
-              },
-              child: Text('Actualizar'),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -333,18 +352,43 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Agenda"),
+        actions: [],
       ),
       body: Column(
         children: [
-          CalendarDatePicker(
-            initialDate: selectedDate,
-            firstDate: DateTime(2000),
-            lastDate: DateTime(2101),
-            onDateChanged: (date) {
+          Container(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              "Fecha Seleccionada: ${selectedDate.toLocal()}".split(' ')[0],
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          TableCalendar(
+            firstDay: DateTime(2000),
+            lastDay: DateTime(2101),
+            focusedDay: selectedDate,
+            selectedDayPredicate: (day) {
+              return isSameDay(selectedDate, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) {
               setState(() {
-                selectedDate = date;
+                selectedDate = selectedDay;
               });
             },
+            calendarStyle: CalendarStyle(
+              todayDecoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+              selectedDecoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+            headerStyle: HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+            ),
           ),
           Expanded(
             child: isLoading
@@ -356,11 +400,12 @@ class _HomePageState extends State<HomePage> {
                         itemBuilder: (BuildContext context, int index) {
                           final record = data[index] as Map<String, dynamic>;
                           DateTime recordDate = DateTime.parse(record["Fecha"]);
-                          if (recordDate == selectedDate) {
+                          if (isSameDay(recordDate, selectedDate)) {
                             return Card(
                               elevation: 4,
                               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               child: ListTile(
+                                leading: Icon(Icons.event_note, color: Colors.blue),
                                 title: Text(record["Nombre_Recordatorio"] ?? 'No Name'),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,6 +445,39 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: showCreateDialog,
         child: Icon(Icons.add),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (int index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => UserScreen()),
+            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ReminderScreen()),
+            );
+          }
+        },
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Agenda',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Recordatorios',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Mi perfil',
+          ),
+        ],
       ),
     );
   }
