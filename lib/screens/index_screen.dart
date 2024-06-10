@@ -351,43 +351,59 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Agenda"),
-        actions: [],
+        title: Row(
+          children: [
+            Text("Agenda"),
+            Spacer(),
+            IconButton(
+              icon: Icon(Icons.add),
+              onPressed: showCreateDialog,
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
           Container(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              "Fecha Seleccionada: ${selectedDate.toLocal()}".split(' ')[0],
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          TableCalendar(
-            firstDay: DateTime(2000),
-            lastDay: DateTime(2101),
-            focusedDay: selectedDate,
-            selectedDayPredicate: (day) {
-              return isSameDay(selectedDate, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                selectedDate = selectedDay;
-              });
-            },
-            calendarStyle: CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: TableCalendar(
+              firstDay: DateTime(2000),
+              lastDay: DateTime(2101),
+              focusedDay: selectedDate,
+              selectedDayPredicate: (day) {
+                return isSameDay(selectedDate, day);
+              },
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  selectedDate = selectedDay;
+                });
+              },
+              calendarStyle: CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                markersMaxCount: 1,
               ),
-              selectedDecoration: BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
+              headerStyle: HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+                titleTextStyle: TextStyle(fontSize: 14),
               ),
-            ),
-            headerStyle: HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
+              calendarBuilders: CalendarBuilders(
+                defaultBuilder: (context, date, _) {
+                  return Center(
+                    child: Text(
+                      '${date.day}',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           Expanded(
@@ -402,30 +418,33 @@ class _HomePageState extends State<HomePage> {
                           DateTime recordDate = DateTime.parse(record["Fecha"]);
                           if (isSameDay(recordDate, selectedDate)) {
                             return Card(
-                              elevation: 4,
-                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              elevation: 2,
+                              margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               child: ListTile(
-                                leading: Icon(Icons.event_note, color: Colors.blue),
-                                title: Text(record["Nombre_Recordatorio"] ?? 'No Name'),
+                                leading: Icon(Icons.event_note, color: Colors.blue, size: 20), // Smaller icon size
+                                title: Text(
+                                  record["Nombre_Recordatorio"] ?? 'No Name',
+                                  style: TextStyle(fontSize: 12), // Smaller text size
+                                ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Descripción: ${record["Descripcion"] ?? ''}'),
-                                    Text('Hora: ${record["Hora"] ?? ''}'),
-                                    Text('Tipo: ${record["Tipo"] ?? ''}'),
+                                    Text('Descripción: ${record["Descripcion"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
+                                    Text('Hora: ${record["Hora"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
+                                    Text('Tipo: ${record["Tipo"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
                                   ],
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
                                     IconButton(
-                                      icon: Icon(Icons.edit, color: Colors.blue),
+                                      icon: Icon(Icons.edit, color: Colors.blue, size: 16), // Smaller icon size
                                       onPressed: () {
                                         showEditDialog(record);
                                       },
                                     ),
                                     IconButton(
-                                      icon: Icon(Icons.delete, color: Colors.red),
+                                      icon: Icon(Icons.delete, color: Colors.red, size: 16), // Smaller icon size
                                       onPressed: () {
                                         deleteData(record['ID_Agenda']);
                                       },
@@ -441,10 +460,6 @@ class _HomePageState extends State<HomePage> {
                       ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: showCreateDialog,
-        child: Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
