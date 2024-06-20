@@ -1,8 +1,13 @@
+import 'package:agenda_personalizada/main.dart';
 import 'package:flutter/material.dart';
 import 'index_screen.dart'; // Asegúrate de importar correctamente index_screen.dart
 import 'user_screen.dart'; // Asegúrate de importar correctamente user_screen.dart
 
+
+
+
 class ReminderScreen extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

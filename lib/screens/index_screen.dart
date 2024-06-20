@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import 'user_screen.dart';
 import 'recordatorios_screen.dart';
 
@@ -36,10 +39,14 @@ class _HomePageState extends State<HomePage> {
   DateTime selectedDate = DateTime.now();
   int _currentIndex = 0;
 
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
   @override
   void initState() {
     super.initState();
     getData();
+    initializeNotifications();
+    scheduleTestNotification();
   }
 
   Future<void> getData() async {
@@ -49,7 +56,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost/Agenda_Pro/api.php'),
+        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
         headers: {"Accept": "application/json"},
       );
 
@@ -71,6 +78,41 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void initializeNotifications() async {
+    tz.initializeTimeZones();
+
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  void scheduleTestNotification() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'your channel id',
+      'your channel name',
+      channelDescription: 'your channel description',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      0,
+      'Omeprazol',
+      'Tomar una Capsula (20mg)  ',
+
+      tz.TZDateTime.now(tz.local).add(Duration(seconds: 20)),
+      platformChannelSpecifics,
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
   Future<void> createData(Map<String, dynamic> newRecord) async {
     setState(() {
       isLoading = true;
@@ -78,7 +120,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost/Agenda_Pro/api.php'),
+        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
         headers: {"Content-Type": "application/json"},
         body: json.encode(newRecord),
       );
@@ -104,7 +146,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final response = await http.put(
-        Uri.parse('http://localhost/Agenda_Pro/api.php'),
+        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
         headers: {"Content-Type": "application/json"},
         body: json.encode(updatedRecord),
       );
@@ -130,7 +172,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://localhost/Agenda_Pro/api.php'),
+        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
         headers: {"Content-Type": "application/json"},
         body: json.encode({'ID_Agenda': idAgenda}),
       );
@@ -410,54 +452,54 @@ class _HomePageState extends State<HomePage> {
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
                 : data.isEmpty
-                    ? Center(child: Text('No hay datos disponibles'))
-                    : ListView.builder(
-                        itemCount: data.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final record = data[index] as Map<String, dynamic>;
-                          DateTime recordDate = DateTime.parse(record["Fecha"]);
-                          if (isSameDay(recordDate, selectedDate)) {
-                            return Card(
-                              elevation: 2,
-                              margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: ListTile(
-                                leading: Icon(Icons.event_note, color: Colors.blue, size: 20), // Smaller icon size
-                                title: Text(
-                                  record["Nombre_Recordatorio"] ?? 'No Name',
-                                  style: TextStyle(fontSize: 12), // Smaller text size
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Descripción: ${record["Descripcion"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
-                                    Text('Hora: ${record["Hora"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
-                                    Text('Tipo: ${record["Tipo"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    IconButton(
-                                      icon: Icon(Icons.edit, color: Colors.blue, size: 16), // Smaller icon size
-                                      onPressed: () {
-                                        showEditDialog(record);
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.delete, color: Colors.red, size: 16), // Smaller icon size
-                                      onPressed: () {
-                                        deleteData(record['ID_Agenda']);
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          } else {
-                            return Container();
-                          }
-                        },
+                ? Center(child: Text('No hay datos disponibles'))
+                : ListView.builder(
+              itemCount: data.length,
+              itemBuilder: (BuildContext context, int index) {
+                final record = data[index] as Map<String, dynamic>;
+                DateTime recordDate = DateTime.parse(record["Fecha"]);
+                if (isSameDay(recordDate, selectedDate)) {
+                  return Card(
+                    elevation: 2,
+                    margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: ListTile(
+                      leading: Icon(Icons.event_note, color: Colors.blue, size: 20), // Smaller icon size
+                      title: Text(
+                        record["Nombre_Recordatorio"] ?? 'No Name',
+                        style: TextStyle(fontSize: 12), // Smaller text size
                       ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Descripción: ${record["Descripcion"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
+                          Text('Hora: ${record["Hora"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
+                          Text('Tipo: ${record["Tipo"] ?? ''}', style: TextStyle(fontSize: 10)), // Smaller text size
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          IconButton(
+                            icon: Icon(Icons.edit, color: Colors.blue, size: 16), // Smaller icon size
+                            onPressed: () {
+                              showEditDialog(record);
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red, size: 16), // Smaller icon size
+                            onPressed: () {
+                              deleteData(record['ID_Agenda']);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  return Container();
+                }
+              },
+            ),
           ),
         ],
       ),
