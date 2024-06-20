@@ -49,21 +49,24 @@ class _HomePageState extends State<HomePage> {
     scheduleTestNotification();
   }
 
-  Future<void> getData() async {
+ Future<void> getData() async {
     setState(() {
       isLoading = true;
     });
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
+        Uri.parse('http://localhost/Agenda_Pro/api.php'),
         headers: {"Accept": "application/json"},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
         setState(() {
-          data = responseData;
+          data = responseData.map((record) {
+            record['ID_Agenda'] = int.parse(record['ID_Agenda'].toString());
+            return record;
+          }).toList();
         });
         print('Data received: $data');
       } else {
@@ -112,15 +115,14 @@ class _HomePageState extends State<HomePage> {
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
-
-  Future<void> createData(Map<String, dynamic> newRecord) async {
+ Future<void> createData(Map<String, dynamic> newRecord) async {
     setState(() {
       isLoading = true;
     });
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
+        Uri.parse('http://localhost/Agenda_Pro/api.php'),
         headers: {"Content-Type": "application/json"},
         body: json.encode(newRecord),
       );
@@ -145,8 +147,9 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
+      updatedRecord['ID_Agenda'] = int.parse(updatedRecord['ID_Agenda'].toString());
       final response = await http.put(
-        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
+        Uri.parse('http://localhost/Agenda_Pro/api.php'),
         headers: {"Content-Type": "application/json"},
         body: json.encode(updatedRecord),
       );
@@ -172,7 +175,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://10.0.2.2/Agenda_Pro/api.php'),
+        Uri.parse('http://localhost/Agenda_Pro/api.php'),
         headers: {"Content-Type": "application/json"},
         body: json.encode({'ID_Agenda': idAgenda}),
       );
@@ -190,6 +193,7 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
+
 
   void showEditDialog(Map<String, dynamic> record) {
     TextEditingController nombreController = TextEditingController(text: record['Nombre_Recordatorio']);
